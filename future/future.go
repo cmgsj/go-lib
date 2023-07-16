@@ -19,9 +19,9 @@ func New[T any](ctx context.Context, task Task[T]) Future[T] {
 
 var errDone = errors.New("future done")
 
-func newFuture[T any](ctx context.Context, task Task[T]) *futureImpl[T] {
+func newFuture[T any](ctx context.Context, task Task[T]) *future[T] {
 	ctx, cancel := context.WithCancelCause(ctx)
-	f := &futureImpl[T]{ctx: ctx}
+	f := &future[T]{ctx: ctx}
 	go func() {
 		f.val, f.err = task(ctx)
 		cancel(errDone)
@@ -29,13 +29,13 @@ func newFuture[T any](ctx context.Context, task Task[T]) *futureImpl[T] {
 	return f
 }
 
-type futureImpl[T any] struct {
+type future[T any] struct {
 	ctx context.Context
 	val T
 	err error
 }
 
-func (f *futureImpl[T]) Get() (T, error) {
+func (f *future[T]) Get() (T, error) {
 	<-f.ctx.Done()
 	err := f.ctx.Err()
 	if err != nil && context.Cause(f.ctx) != errDone {
@@ -44,7 +44,7 @@ func (f *futureImpl[T]) Get() (T, error) {
 	return f.val, f.err
 }
 
-func (f *futureImpl[T]) IsReady() bool {
+func (f *future[T]) IsReady() bool {
 	select {
 	case <-f.ctx.Done():
 		return true
@@ -53,6 +53,6 @@ func (f *futureImpl[T]) IsReady() bool {
 	}
 }
 
-func (f *futureImpl[T]) Done() <-chan struct{} {
+func (f *future[T]) Done() <-chan struct{} {
 	return f.ctx.Done()
 }

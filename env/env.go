@@ -1,4 +1,3 @@
-// Package env provides a simple interface to environment variables.
 package env
 
 import (
@@ -6,29 +5,31 @@ import (
 	"os"
 )
 
-// Get returns the value of the environment variable named by the key.
-// If the variable is not set, it returns an empty string.
+func Lookup(key string) (string, bool) {
+	return os.LookupEnv(key)
+}
+
 func Get(key string) string {
 	return os.Getenv(key)
 }
 
-// GetDefault returns the value of the environment variable named by the key.
-// If the variable is not set, it returns the default value.
 func GetDefault(key, defaultValue string) string {
-	val := os.Getenv(key)
-	if val == "" {
+	v, ok := os.LookupEnv(key)
+	if !ok || v == "" {
 		return defaultValue
 	}
-	return val
+	return v
 }
 
-// MustGet returns the value of the environment variable named by the key.
-// If the variable is not set, it exits the program.
 func MustGet(key string) string {
-	val := os.Getenv(key)
-	if val == "" {
-		fmt.Fprintf(os.Stderr, "error: must set the %q environment variable\n", key)
-		os.Exit(1)
+	v, ok := os.LookupEnv(key)
+	if !ok || v == "" {
+		Exitf("env: var %q not set or is empty", key)
 	}
-	return val
+	return v
+}
+
+func Exitf(format string, args ...interface{}) {
+	fmt.Fprintf(os.Stderr, format, args...)
+	os.Exit(1)
 }
