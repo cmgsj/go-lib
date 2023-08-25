@@ -55,3 +55,9 @@ func ServeDocs() http.Handler {
 
 	return mux
 }
+
+func Must(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
