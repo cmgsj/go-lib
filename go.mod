@@ -1,3 +1,3 @@
-module github.com/cmgjs/go-lib
+module github.com/cmgsj/go-lib
 
-go 1.20
+go 1.21.0
