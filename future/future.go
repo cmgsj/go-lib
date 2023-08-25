@@ -6,7 +6,7 @@ import (
 )
 
 type Future[T any] interface {
-	Get() (T, error)
+	Get(context.Context) (T, error)
 	IsReady() bool
 	Done() <-chan struct{}
 }
@@ -35,13 +35,16 @@ type future[T any] struct {
 	err error
 }
 
-func (f *future[T]) Get() (T, error) {
-	<-f.ctx.Done()
-	err := f.ctx.Err()
-	if err != nil && context.Cause(f.ctx) != errDone {
-		return f.val, err
+func (f *future[T]) Get(ctx context.Context) (T, error) {
+	select {
+	case <-ctx.Done():
+		return f.val, ctx.Err()
+	case <-f.ctx.Done():
+		if context.Cause(f.ctx) != errDone {
+			return f.val, f.ctx.Err()
+		}
+		return f.val, f.err
 	}
-	return f.val, f.err
 }
 
 func (f *future[T]) IsReady() bool {
