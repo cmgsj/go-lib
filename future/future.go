@@ -6,7 +6,7 @@ import (
 )
 
 type Future[T any] interface {
-	Get(context.Context) (T, error)
+	Get(ctx context.Context) (T, error)
 	IsReady() bool
 	Done() <-chan struct{}
 }
@@ -14,12 +14,6 @@ type Future[T any] interface {
 type Task[T any] func(context.Context) (T, error)
 
 func New[T any](ctx context.Context, task Task[T]) Future[T] {
-	return newFuture(ctx, task)
-}
-
-var errDone = errors.New("future done")
-
-func newFuture[T any](ctx context.Context, task Task[T]) *future[T] {
 	ctx, cancel := context.WithCancelCause(ctx)
 	f := &future[T]{ctx: ctx}
 	go func() {
@@ -28,6 +22,8 @@ func newFuture[T any](ctx context.Context, task Task[T]) *future[T] {
 	}()
 	return f
 }
+
+var errDone = errors.New("future done")
 
 type future[T any] struct {
 	ctx context.Context

@@ -4,6 +4,7 @@ import (
 	"embed"
 	"fmt"
 	"net/http"
+	"strings"
 	"text/template"
 )
 
@@ -13,7 +14,7 @@ var (
 	//go:embed swagger-initializer.tmpl
 	swaggerInitializer string
 
-	schemas = make(map[string]Schema)
+	fs = http.FileServer(http.FS(docs))
 
 	tmpl = template.Must(template.New("swagger-initializer").Parse(swaggerInitializer))
 )
@@ -23,41 +24,33 @@ type Schema struct {
 	ContentJSON []byte
 }
 
-func RegisterSchema(schema Schema) error {
-	url := fmt.Sprintf("/docs/schemas/%s.swagger.json", schema.Name)
-	_, ok := schemas[url]
-	if ok {
-		return fmt.Errorf("openapi: schema %q already registered", schema.Name)
-	}
-	schemas[url] = schema
-	return nil
-}
+func ServeDocs(route string, schemas ...Schema) http.Handler {
+	route = "/" + strings.Trim(route, "/") + "/"
 
-func ServeDocs() http.Handler {
+	registry := make(map[string]Schema)
+
+	for _, schema := range schemas {
+		registry[fmt.Sprintf("%sschemas/%s.swagger.json", route, schema.Name)] = schema
+	}
+
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("/docs/swagger-initializer.js", func(w http.ResponseWriter, r *http.Request) {
-		err := tmpl.Execute(w, schemas)
+	mux.HandleFunc(route+"swagger-initializer.js", func(w http.ResponseWriter, r *http.Request) {
+		err := tmpl.Execute(w, registry)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 	})
 
-	mux.HandleFunc("/docs/", func(w http.ResponseWriter, r *http.Request) {
-		schema, ok := schemas[r.URL.Path]
+	mux.HandleFunc(route, func(w http.ResponseWriter, r *http.Request) {
+		schema, ok := registry[r.URL.Path]
 		if ok {
 			w.Write(schema.ContentJSON)
 			return
 		}
-		http.FileServer(http.FS(docs)).ServeHTTP(w, r)
+		fs.ServeHTTP(w, r)
 	})
 
 	return mux
-}
-
-func Must(err error) {
-	if err != nil {
-		panic(err)
-	}
 }

@@ -10,10 +10,10 @@ import (
 )
 
 var (
-	//go:embed sqldb.tmpl
-	sqldb string
+	//go:embed sqlcdb.tmpl
+	sqlcdb string
 
-	tmpl = template.Must(template.New("sqldb").Parse(sqldb))
+	tmpl = template.Must(template.New("sqlcdb").Parse(sqlcdb))
 )
 
 func main() {
