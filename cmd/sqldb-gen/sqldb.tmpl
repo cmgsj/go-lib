@@ -49,7 +49,12 @@ func (d *db) ExecTx(ctx context.Context, f TxFunc) (err error) {
 	if err != nil {
 		return err
 	}
-	defer func() { err = tx.Rollback() }()
+	defer func() {
+		err = tx.Rollback()
+		if err == sql.ErrTxDone {
+			err = nil
+		}
+	}()
 	err = f(tx)
 	if err != nil {
 		return err
