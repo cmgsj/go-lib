@@ -24,7 +24,7 @@ type Schema struct {
 	ContentJSON []byte
 }
 
-func ServeDocs(route string, schemas ...Schema) http.Handler {
+func Docs(route string, schemas ...Schema) http.Handler {
 	route = "/" + strings.Trim(route, "/") + "/"
 
 	registry := make(map[string]Schema)
@@ -39,7 +39,6 @@ func ServeDocs(route string, schemas ...Schema) http.Handler {
 		err := tmpl.Execute(w, registry)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
 		}
 	})
 

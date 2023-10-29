@@ -23,7 +23,7 @@ func New[T any](ctx context.Context, task Task[T]) Future[T] {
 	return f
 }
 
-var errDone = errors.New("future done")
+var errDone = errors.New("done")
 
 type future[T any] struct {
 	ctx context.Context
