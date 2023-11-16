@@ -2,10 +2,7 @@ module github.com/cmgsj/go-lib
 
 go 1.21.4
 
-require (
-	github.com/go-playground/validator/v10 v10.15.3
-	gopkg.in/yaml.v3 v3.0.1
-)
+require github.com/go-playground/validator/v10 v10.15.3
 
 require (
 	github.com/gabriel-vasile/mimetype v1.4.2 // indirect
