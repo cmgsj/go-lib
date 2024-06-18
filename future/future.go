@@ -3,59 +3,79 @@ package future
 import (
 	"context"
 	"errors"
+	"sync"
 )
 
 type Future[T any] interface {
+	Task[T]
 	Get(ctx context.Context) (T, error)
-	IsReady() bool
 	Done() <-chan struct{}
+	IsDone() bool
 }
 
-type Task[T any] interface {
-	Execute(ctx context.Context) (T, error)
-}
-
-type TaskFunc[T any] func(ctx context.Context) (T, error)
-
-func (f TaskFunc[T]) Execute(ctx context.Context) (T, error) {
-	return f(ctx)
-}
-
-func New[T any](ctx context.Context, task Task[T]) Future[T] {
-	ctx, cancel := context.WithCancelCause(ctx)
-	f := &future[T]{Context: ctx}
-	go func() {
-		f.val, f.err = task.Execute(ctx)
-		cancel(errDone)
-	}()
+func Eager[T any](ctx context.Context, task Task[T]) Future[T] {
+	f := newFuture(ctx, task)
+	f.execute(ctx)
 	return f
+}
+
+func Lazy[T any](ctx context.Context, task Task[T]) Future[T] {
+	return newFuture(ctx, task)
+}
+
+func newFuture[T any](ctx context.Context, task Task[T]) *future[T] {
+	ctx, cancel := context.WithCancelCause(ctx)
+	return &future[T]{
+		ctx:    ctx,
+		cancel: cancel,
+		task:   task,
+	}
 }
 
 var errDone = errors.New("done")
 
 type future[T any] struct {
-	context.Context
-	val T
-	err error
+	once   sync.Once
+	ctx    context.Context
+	cancel context.CancelCauseFunc
+	task   Task[T]
+	val    T
+	err    error
+}
+
+func (f *future[T]) Execute(ctx context.Context) (T, error) {
+	return f.Get(ctx)
 }
 
 func (f *future[T]) Get(ctx context.Context) (T, error) {
+	f.execute(ctx)
 	select {
 	case <-ctx.Done():
 		return f.val, ctx.Err()
-	case <-f.Done():
-		if context.Cause(f) != errDone {
-			return f.val, f.Err()
+	case <-f.ctx.Done():
+		if context.Cause(f.ctx) == errDone {
+			return f.val, f.err
 		}
-		return f.val, f.err
+		return f.val, f.ctx.Err()
 	}
 }
 
-func (f *future[T]) IsReady() bool {
+func (f *future[T]) Done() <-chan struct{} {
+	return f.ctx.Done()
+}
+
+func (f *future[T]) IsDone() bool {
 	select {
 	case <-f.Done():
 		return true
 	default:
 		return false
 	}
+}
+
+func (f *future[T]) execute(ctx context.Context) {
+	go f.once.Do(func() {
+		f.val, f.err = f.task.Execute(ctx)
+		f.cancel(errDone)
+	})
 }

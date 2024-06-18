@@ -2,39 +2,72 @@ package heap
 
 import "container/heap"
 
-type Heap[T any] interface {
-	Push(x T)
-	Pop() T
+type Heap[E any] interface {
+	Push(e E)
+	Pop() E
 	Len() int
 }
 
-func New[S ~[]T, T any](slice S, less func(x, y T) bool) Heap[T] {
-	h := &stdHeap[T]{
-		slice: slice,
-		less:  less,
-	}
-	heap.Init(h)
-	return &heapImpl[T]{h}
+func NewCmp[S ~[]E, E any](slice S, cmp func(x, y E) int) Heap[E] {
+	return newHeap[S](&cmpHeap[S, E]{baseHeap: &baseHeap[S, E]{slice: slice}, cmp: cmp})
 }
 
-type heapImpl[T any] struct {
+func NewLess[S ~[]E, E any](slice S, less func(x, y E) bool) Heap[E] {
+	return newHeap[S](&lessHeap[S, E]{baseHeap: &baseHeap[S, E]{slice: slice}, less: less})
+}
+
+func newHeap[S ~[]E, E any](iface heap.Interface) Heap[E] {
+	heap.Init(iface)
+	return &heapImpl[E]{Interface: iface}
+}
+
+type heapImpl[E any] struct {
 	heap.Interface
 }
 
-func (h *heapImpl[T]) Push(x T) { heap.Push(h.Interface, x) }
-func (h *heapImpl[T]) Pop() T   { return heap.Pop(h.Interface).(T) }
-func (h *heapImpl[T]) Len() int { return h.Interface.Len() }
-
-type stdHeap[T any] struct {
-	slice []T
-	less  func(x, y T) bool
+func (h *heapImpl[E]) Push(e E) {
+	heap.Push(h.Interface, e)
 }
 
-func (h *stdHeap[T]) Len() int           { return len(h.slice) }
-func (h *stdHeap[T]) Less(i, j int) bool { return h.less(h.slice[i], h.slice[j]) }
-func (h *stdHeap[T]) Swap(i, j int)      { h.slice[i], h.slice[j] = h.slice[j], h.slice[i] }
-func (h *stdHeap[T]) Push(x any)         { h.slice = append(h.slice, x.(T)) }
-func (h *stdHeap[T]) Pop() any {
+func (h *heapImpl[E]) Pop() E {
+	return heap.Pop(h.Interface).(E)
+}
+
+type cmpHeap[S ~[]E, E any] struct {
+	*baseHeap[S, E]
+	cmp func(x, y E) int
+}
+
+func (h *cmpHeap[S, E]) Less(i, j int) bool {
+	return h.cmp(h.slice[i], h.slice[j]) < 0
+}
+
+type lessHeap[S ~[]E, E any] struct {
+	*baseHeap[S, E]
+	less func(x, y E) bool
+}
+
+func (h *lessHeap[S, E]) Less(i, j int) bool {
+	return h.less(h.slice[i], h.slice[j])
+}
+
+type baseHeap[S ~[]E, E any] struct {
+	slice S
+}
+
+func (h *baseHeap[S, E]) Len() int {
+	return len(h.slice)
+}
+
+func (h *baseHeap[S, E]) Swap(i, j int) {
+	h.slice[i], h.slice[j] = h.slice[j], h.slice[i]
+}
+
+func (h *baseHeap[S, E]) Push(x any) {
+	h.slice = append(h.slice, x.(E))
+}
+
+func (h *baseHeap[S, E]) Pop() any {
 	n := len(h.slice)
 	x := h.slice[n-1]
 	h.slice = h.slice[:n-1]

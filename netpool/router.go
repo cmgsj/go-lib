@@ -5,25 +5,25 @@ type Router interface {
 }
 
 func RoundRobin() Router {
-	return &roundrobin{}
+	return &roundRobinRouter{}
 }
 
 func Sticky(times uint32) Router {
-	return &sticky{times: times}
+	return &stickyRouter{times: times}
 }
 
-type roundrobin struct{}
+type roundRobinRouter struct{}
 
-func (r *roundrobin) Next(current, total uint32) uint32 {
+func (r *roundRobinRouter) Next(current, total uint32) uint32 {
 	return (current + 1) % total
 }
 
-type sticky struct {
+type stickyRouter struct {
 	count uint32
 	times uint32
 }
 
-func (s *sticky) Next(current, total uint32) uint32 {
+func (s *stickyRouter) Next(current, total uint32) uint32 {
 	if s.times == 0 {
 		s.times = 1
 	}
