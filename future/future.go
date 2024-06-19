@@ -13,14 +13,14 @@ type Future[T any] interface {
 	IsDone() bool
 }
 
-func Eager[T any](ctx context.Context, task Task[T]) Future[T] {
+func New[T any](ctx context.Context, task Task[T]) Future[T] {
+	return newFuture(ctx, task)
+}
+
+func Execute[T any](ctx context.Context, task Task[T]) Future[T] {
 	f := newFuture(ctx, task)
 	f.execute(ctx)
 	return f
-}
-
-func Lazy[T any](ctx context.Context, task Task[T]) Future[T] {
-	return newFuture(ctx, task)
 }
 
 func newFuture[T any](ctx context.Context, task Task[T]) *future[T] {
