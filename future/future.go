@@ -8,7 +8,7 @@ import (
 
 type Future[T any] interface {
 	Task[T]
-	Get(ctx context.Context) (T, error)
+	Execute()
 	Done() <-chan struct{}
 	IsDone() bool
 }
@@ -19,7 +19,7 @@ func New[T any](ctx context.Context, task Task[T]) Future[T] {
 
 func Execute[T any](ctx context.Context, task Task[T]) Future[T] {
 	f := newFuture(ctx, task)
-	f.execute(ctx)
+	f.Execute()
 	return f
 }
 
@@ -39,24 +39,27 @@ type future[T any] struct {
 	ctx    context.Context
 	cancel context.CancelCauseFunc
 	task   Task[T]
-	val    T
+	result T
 	err    error
 }
 
-func (f *future[T]) Execute(ctx context.Context) (T, error) {
-	return f.Get(ctx)
+func (f *future[T]) Execute() {
+	go f.once.Do(func() {
+		f.result, f.err = f.task.Result(f.ctx)
+		f.cancel(errDone)
+	})
 }
 
-func (f *future[T]) Get(ctx context.Context) (T, error) {
-	f.execute(ctx)
+func (f *future[T]) Result(ctx context.Context) (T, error) {
+	f.Execute()
 	select {
 	case <-ctx.Done():
-		return f.val, ctx.Err()
+		return f.result, ctx.Err()
 	case <-f.ctx.Done():
 		if context.Cause(f.ctx) == errDone {
-			return f.val, f.err
+			return f.result, f.err
 		}
-		return f.val, f.ctx.Err()
+		return f.result, f.ctx.Err()
 	}
 }
 
@@ -71,11 +74,4 @@ func (f *future[T]) IsDone() bool {
 	default:
 		return false
 	}
-}
-
-func (f *future[T]) execute(ctx context.Context) {
-	go f.once.Do(func() {
-		f.val, f.err = f.task.Execute(ctx)
-		f.cancel(errDone)
-	})
 }
