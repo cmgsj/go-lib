@@ -157,13 +157,13 @@ func (f *Flag[T]) parse() error {
 }
 
 var (
-	camelLowerToUpper = regexp.MustCompile("([a-z0-9])([A-Z])")
-	camelUpperToLower = regexp.MustCompile("([A-Z])([A-Z][a-z0-9])")
+	camelCaseLowerToUpper = regexp.MustCompile("([a-z0-9])([A-Z])")
+	camelCaseUpperToLower = regexp.MustCompile("([A-Z])([A-Z][a-z0-9])")
 )
 
 func toSnakeCase(s string) string {
-	s = camelLowerToUpper.ReplaceAllString(s, "${1}_${2}")
-	s = camelUpperToLower.ReplaceAllString(s, "${1}_${2}")
+	s = camelCaseLowerToUpper.ReplaceAllString(s, "${1}_${2}")
+	s = camelCaseUpperToLower.ReplaceAllString(s, "${1}_${2}")
 	s = strings.ReplaceAll(s, "-", "_")
 	return s
 }
