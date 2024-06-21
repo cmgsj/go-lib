@@ -84,13 +84,13 @@ func (f *Flag[T]) Value() T {
 
 func (f *Flag[T]) parse() error {
 	var zero T
-	var parsedEnv bool
+	var boundEnv bool
 
-	if f.value == zero {
+	if f.value == zero && f.flagSet.envPrefix != nil {
 		key := f.name
 
-		if f.flagSet.envPrefix != "" {
-			key = f.flagSet.envPrefix + "_" + key
+		if *f.flagSet.envPrefix != "" {
+			key = *f.flagSet.envPrefix + "_" + key
 		}
 
 		key = strings.ToUpper(toSnakeCase(key))
@@ -141,11 +141,11 @@ func (f *Flag[T]) parse() error {
 
 			f.value = v.(T)
 
-			parsedEnv = true
+			boundEnv = true
 		}
 	}
 
-	if f.value == zero && !parsedEnv {
+	if f.value == zero && !boundEnv {
 		f.value = f.defaultValue
 	}
 
