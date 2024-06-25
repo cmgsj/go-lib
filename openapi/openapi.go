@@ -1,66 +1,89 @@
 package openapi
 
 import (
+	"bytes"
 	"embed"
 	"fmt"
+	"io/fs"
 	"net/http"
 	"strings"
 	"text/template"
 )
 
 var (
-	//go:embed docs
-	docs   embed.FS
-	docsFS = http.FileServer(http.FS(docs))
-
-	//go:embed swagger-initializer.tmpl
-	swaggerInitializer     string
-	swaggerInitializerTmpl = template.Must(template.New("swagger-initializer").Parse(swaggerInitializer))
+	//go:embed all:docs
+	swaggerDocs embed.FS
+	//go:embed swagger-initializer.js
+	swaggerInit string
 )
 
 type Schema struct {
-	Name        string
-	ContentJSON []byte
-	ContentYAML []byte
+	Name    string
+	Content []byte
 }
 
-func Docs(route string, schemas ...Schema) http.Handler {
-	route = strings.TrimSuffix(route, "/")
-
-	schemaNames := make(map[string]string)
-	schemaContents := make(map[string][]byte)
-
-	for _, schema := range schemas {
-		if len(schema.ContentJSON) > 0 {
-			url := fmt.Sprintf("%s/schemas/%s.json", route, schema.Name)
-			schemaNames[url] = schema.Name
-			schemaContents[url] = schema.ContentJSON
-		}
-
-		if len(schema.ContentYAML) > 0 {
-			url := fmt.Sprintf("%s/schemas/%s.yaml", route, schema.Name)
-			schemaNames[url] = schema.Name
-			schemaContents[url] = schema.ContentYAML
-		}
+func SwaggerDocs(prefix string, schemas ...Schema) http.Handler {
+	hanler, err := NewSwaggerDocsHandler(prefix, schemas...)
+	if err != nil {
+		panic(err)
 	}
 
-	mux := http.NewServeMux()
+	return hanler
+}
 
-	mux.HandleFunc(fmt.Sprintf("%s/swagger-initializer.js", route), func(w http.ResponseWriter, r *http.Request) {
-		err := swaggerInitializerTmpl.Execute(w, schemaNames)
+func NewSwaggerDocsHandler(prefix string, schemas ...Schema) (http.Handler, error) {
+	prefix = strings.TrimSuffix(prefix, "/")
+	prefix = strings.TrimSuffix(prefix, "/*")
+
+	overrides := make(map[string][]byte)
+	initParams := make(map[string]string)
+
+	for _, schema := range schemas {
+		schemaURL := fmt.Sprintf("%s/schemas/%s", prefix, schema.Name)
+		overrides[schemaURL] = schema.Content
+		initParams[schemaURL] = schema.Name
+	}
+
+	docsFS, err := fs.Sub(swaggerDocs, "docs")
+	if err != nil {
+		return nil, err
+	}
+
+	initTmpl, err := template.New("swagger-initializer").Parse(swaggerInit)
+	if err != nil {
+		return nil, err
+	}
+
+	var initBuf bytes.Buffer
+
+	err = initTmpl.Execute(&initBuf, initParams)
+	if err != nil {
+		return nil, err
+	}
+
+	initURL := fmt.Sprintf("%s/swagger-initializer.js", prefix)
+	overrides[initURL] = initBuf.Bytes()
+
+	return &swaggerDocsHandler{
+		docs:      http.StripPrefix(prefix, http.FileServer(http.FS(docsFS))),
+		overrides: overrides,
+	}, nil
+}
+
+type swaggerDocsHandler struct {
+	docs      http.Handler
+	overrides map[string][]byte
+}
+
+func (h *swaggerDocsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	content, ok := h.overrides[r.URL.Path]
+	if ok {
+		_, err := w.Write(content)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
-	})
+		return
+	}
 
-	mux.HandleFunc(fmt.Sprintf("%s/", route), func(w http.ResponseWriter, r *http.Request) {
-		content, ok := schemaContents[r.URL.Path]
-		if ok {
-			w.Write(content)
-			return
-		}
-		docsFS.ServeHTTP(w, r)
-	})
-
-	return mux
+	h.docs.ServeHTTP(w, r)
 }
