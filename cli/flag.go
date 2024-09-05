@@ -10,21 +10,21 @@ import (
 	"time"
 )
 
-type FlagType interface {
+type FlagValue interface {
 	string | bool | int | int64 | uint | uint64 | float64 | time.Duration
 }
 
-type Flag[T FlagType] struct {
+type Flag[V FlagValue] struct {
 	flagSet      *FlagSet
 	name         string
 	usage        string
 	required     bool
-	defaultValue T
-	value        T
+	defaultValue V
+	value        V
 }
 
-func newFlag[T FlagType](flagSet *FlagSet, name, usage string, required bool, defaults ...T) *Flag[T] {
-	f := &Flag[T]{
+func newFlag[V FlagValue](flagSet *FlagSet, name, usage string, required bool, defaults ...V) *Flag[V] {
+	f := &Flag[V]{
 		flagSet:      flagSet,
 		name:         name,
 		usage:        usage,
@@ -66,28 +66,28 @@ func newFlag[T FlagType](flagSet *FlagSet, name, usage string, required bool, de
 	return f
 }
 
-func (f *Flag[T]) Name() string {
+func (f *Flag[V]) Name() string {
 	return f.name
 }
 
-func (f *Flag[T]) Usage() string {
+func (f *Flag[V]) Usage() string {
 	return f.usage
 }
 
-func (f *Flag[T]) Required() bool {
+func (f *Flag[V]) Required() bool {
 	return f.required
 }
 
-func (f *Flag[T]) Value() T {
+func (f *Flag[V]) Value() V {
 	return f.value
 }
 
-func (f *Flag[T]) SetValue(value T) {
+func (f *Flag[V]) SetValue(value V) {
 	f.value = value
 }
 
-func (f *Flag[T]) parse() error {
-	var zero T
+func (f *Flag[V]) parse() error {
+	var zero V
 	var boundEnv bool
 
 	if f.value == zero && f.flagSet.envPrefix != nil {
@@ -140,10 +140,11 @@ func (f *Flag[T]) parse() error {
 			if err != nil {
 				return fmt.Errorf(
 					"failed to parse flag %s of type %T from environment variable %s=%q: %v",
-					f.name, f.value, key, value, err)
+					f.name, f.value, key, value, err,
+				)
 			}
 
-			f.value = v.(T)
+			f.value = v.(V)
 
 			boundEnv = true
 		}

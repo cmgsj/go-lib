@@ -54,7 +54,18 @@ func (f *FlagSet) PrintDefaults() {
 }
 
 func (f *FlagSet) Parse(args []string) error {
-	return f.parse(args)
+	err := f.flagSet.Parse(args)
+	if err != nil {
+		return err
+	}
+
+	var errs []error
+
+	for _, flag := range f.flags {
+		errs = append(errs, flag.parse())
+	}
+
+	return errors.Join(errs...)
 }
 
 func (f *FlagSet) Parsed() bool {
@@ -123,19 +134,4 @@ func (f *FlagSet) Float64Flag(name, usage string, required bool, defaults ...flo
 
 func (f *FlagSet) DurationFlag(name, usage string, required bool, defaults ...time.Duration) *Flag[time.Duration] {
 	return newFlag(f, name, usage, required, defaults...)
-}
-
-func (f *FlagSet) parse(args []string) error {
-	err := f.flagSet.Parse(args)
-	if err != nil {
-		return err
-	}
-
-	var errs []error
-
-	for _, flag := range f.flags {
-		errs = append(errs, flag.parse())
-	}
-
-	return errors.Join(errs...)
 }
