@@ -76,9 +76,13 @@ func (v *Vars) Parsed() bool {
 }
 
 func (v *Vars) Parse(args []string) error {
+	if v.flagSet == nil && v.envPrefix == nil {
+		return nil
+	}
+
 	err := v.flagSet.Parse(args)
 	if err != nil {
-		return err
+		return handleError(v.errorHandling, err)
 	}
 
 	var errs []error
