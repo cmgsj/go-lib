@@ -11,8 +11,8 @@ import (
 )
 
 var (
-	//go:embed all:docs
-	docs embed.FS
+	//go:embed all:dist
+	dist embed.FS
 	//go:embed swagger-initializer.js
 	initializer string
 )
@@ -36,42 +36,45 @@ func NewDocsHandler(prefix string, schemas ...Schema) (http.Handler, error) {
 	prefix = strings.TrimSuffix(prefix, "/*")
 
 	overrides := make(map[string][]byte)
-	initParams := make(map[string]string)
+	initializerParams := make(map[string]string)
 
 	for _, schema := range schemas {
 		schemaURL := fmt.Sprintf("%s/schemas/%s", prefix, schema.Name)
+
 		overrides[schemaURL] = schema.Content
-		initParams[schemaURL] = schema.Name
+
+		initializerParams[schemaURL] = schema.Name
 	}
 
-	docsFS, err := fs.Sub(docs, "docs")
+	distFS, err := fs.Sub(dist, "dist")
 	if err != nil {
 		return nil, err
 	}
 
-	initializerTmpl, err := template.New("swagger-initializer").Parse(initializer)
+	initializerTmpl, err := template.New("swagger-initializer.js").Parse(initializer)
 	if err != nil {
 		return nil, err
 	}
 
 	var initializerBuf bytes.Buffer
 
-	err = initializerTmpl.Execute(&initializerBuf, initParams)
+	err = initializerTmpl.Execute(&initializerBuf, initializerParams)
 	if err != nil {
 		return nil, err
 	}
 
-	initURL := fmt.Sprintf("%s/swagger-initializer.js", prefix)
-	overrides[initURL] = initializerBuf.Bytes()
+	initializerURL := fmt.Sprintf("%s/swagger-initializer.js", prefix)
+
+	overrides[initializerURL] = initializerBuf.Bytes()
 
 	return &docsHandler{
-		docs:      http.StripPrefix(prefix, http.FileServer(http.FS(docsFS))),
+		dist:      http.StripPrefix(prefix, http.FileServer(http.FS(distFS))),
 		overrides: overrides,
 	}, nil
 }
 
 type docsHandler struct {
-	docs      http.Handler
+	dist      http.Handler
 	overrides map[string][]byte
 }
 
@@ -85,5 +88,5 @@ func (h *docsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.docs.ServeHTTP(w, r)
+	h.dist.ServeHTTP(w, r)
 }
