@@ -1,4 +1,4 @@
-package future
+package futures
 
 import "context"
 
