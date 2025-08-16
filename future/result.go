@@ -7,15 +7,15 @@ func Value[T any](value T) Future[T] {
 }
 
 func Error[T any](err error) Future[T] {
-	var v T
-	return Result(v, err)
+	var value T
+	return Result(value, err)
 }
 
-func Result[T any](result T, err error) Future[T] {
+func Result[T any](value T, err error) Future[T] {
 	f := &resultFuture[T]{
-		result: result,
-		err:    err,
-		done:   make(chan struct{}),
+		value: value,
+		err:   err,
+		done:  make(chan struct{}),
 	}
 
 	close(f.done)
@@ -24,24 +24,24 @@ func Result[T any](result T, err error) Future[T] {
 }
 
 type resultFuture[T any] struct {
-	result T
-	err    error
-	done   chan struct{}
+	value T
+	err   error
+	done  chan struct{}
 }
 
 func (f *resultFuture[T]) Get(ctx context.Context) (T, error) {
-	var v T
+	var value T
 
 	select {
 	case <-ctx.Done():
-		return v, ctx.Err()
+		return value, ctx.Err()
 
 	default:
 		if f.err != nil {
-			return v, f.err
+			return value, f.err
 		}
 
-		return f.result, nil
+		return f.value, nil
 	}
 }
 

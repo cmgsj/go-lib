@@ -5,7 +5,9 @@ import (
 	"errors"
 )
 
-func Task[T any](ctx context.Context, task func(ctx context.Context) (T, error)) Future[T] {
+type TaskFunc[T any] func(ctx context.Context) (T, error)
+
+func Task[T any](ctx context.Context, task TaskFunc[T]) Future[T] {
 	cctx, cancel := context.WithCancelCause(ctx)
 
 	f := &taskFuture[T]{
@@ -13,7 +15,7 @@ func Task[T any](ctx context.Context, task func(ctx context.Context) (T, error))
 	}
 
 	go func() {
-		f.result, f.err = task(ctx)
+		f.value, f.err = task(ctx)
 		cancel(errTaskDone)
 	}()
 
@@ -23,28 +25,28 @@ func Task[T any](ctx context.Context, task func(ctx context.Context) (T, error))
 var errTaskDone = errors.New("task done")
 
 type taskFuture[T any] struct {
-	ctx    context.Context
-	result T
-	err    error
+	ctx   context.Context
+	value T
+	err   error
 }
 
 func (f *taskFuture[T]) Get(ctx context.Context) (T, error) {
-	var v T
+	var value T
 
 	select {
 	case <-ctx.Done():
-		return v, ctx.Err()
+		return value, ctx.Err()
 
 	case <-f.ctx.Done():
 		if context.Cause(f.ctx) == errTaskDone {
 			if f.err != nil {
-				return v, f.err
+				return value, f.err
 			}
 
-			return f.result, nil
+			return f.value, nil
 		}
 
-		return v, f.ctx.Err()
+		return value, f.ctx.Err()
 	}
 }
 
