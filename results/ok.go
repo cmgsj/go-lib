@@ -7,43 +7,43 @@ import (
 )
 
 func Ok[T any, E error](value T) Result[T, E] {
-	return &ResultOk[T, E]{Value: value}
+	return &resultOk[T, E]{value: value}
 }
 
-type ResultOk[T any, E error] struct {
-	Value T
+type resultOk[T any, E error] struct {
+	value T
 }
 
-func (r *ResultOk[T, E]) Ok() options.Option[T] {
-	return options.Some(r.Value)
+func (r *resultOk[T, E]) Ok() options.Option[T] {
+	return options.Some(r.value)
 }
 
-func (r *ResultOk[T, E]) Err() options.Option[E] {
+func (r *resultOk[T, E]) Err() options.Option[E] {
 	return options.None[E]()
 }
 
-func (r *ResultOk[T, E]) IsOk() bool {
+func (r *resultOk[T, E]) IsOk() bool {
 	return true
 }
 
-func (r *ResultOk[T, E]) IsErr() bool {
+func (r *resultOk[T, E]) IsErr() bool {
 	return false
 }
 
-func (r *ResultOk[T, E]) Expect(message string) T {
-	return r.Value
+func (r *resultOk[T, E]) Expect(message string) T {
+	return r.value
 }
 
-func (r *ResultOk[T, E]) ExpectErr(message string) E {
-	panic(message + ": " + fmt.Sprint(r.Value))
+func (r *resultOk[T, E]) ExpectErr(message string) E {
+	panic(message + ": " + fmt.Sprint(r.value))
 }
 
-func (r *ResultOk[T, E]) Unwrap() T {
-	return r.Value
+func (r *resultOk[T, E]) Unwrap() T {
+	return r.value
 }
 
-func (r *ResultOk[T, E]) UnwrapErr() E {
-	panic("called [Result.UnwrapErr] on an [ResultOk] value: " + fmt.Sprint(r.Value))
+func (r *resultOk[T, E]) UnwrapErr() E {
+	panic("called Result.UnwrapErr on an ResultOk value: " + fmt.Sprint(r.value))
 }
 
-func (r *ResultOk[T, E]) internal() {}
+func (r *resultOk[T, E]) result() {}

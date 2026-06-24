@@ -1,25 +1,25 @@
 package options
 
 func Some[T any](value T) Option[T] {
-	return &OptionSome[T]{Value: value}
+	return &optionSome[T]{value: value}
 }
 
-type OptionSome[T any] struct{ Value T }
+type optionSome[T any] struct{ value T }
 
-func (o *OptionSome[T]) IsSome() bool {
+func (o *optionSome[T]) IsSome() bool {
 	return true
 }
 
-func (o *OptionSome[T]) IsNone() bool {
+func (o *optionSome[T]) IsNone() bool {
 	return false
 }
 
-func (o *OptionSome[T]) Expect(message string) T {
-	return o.Value
+func (o *optionSome[T]) Expect(message string) T {
+	return o.value
 }
 
-func (o *OptionSome[T]) Unwrap() T {
-	return o.Value
+func (o *optionSome[T]) Unwrap() T {
+	return o.value
 }
 
-func (o *OptionSome[T]) internal() {}
+func (o *optionSome[T]) result() {}

@@ -1,8 +1,6 @@
 package results
 
-import (
-	"github.com/cmgsj/go-lib/options"
-)
+import "github.com/cmgsj/go-lib/options"
 
 type Result[T any, E error] interface {
 	Ok() options.Option[T]
@@ -13,7 +11,7 @@ type Result[T any, E error] interface {
 	ExpectErr(message string) E
 	Unwrap() T
 	UnwrapErr() E
-	internal()
+	result()
 }
 
 func New[T any](value T, err error) Result[T, error] {

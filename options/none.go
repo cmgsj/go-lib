@@ -1,25 +1,25 @@
 package options
 
 func None[T any]() Option[T] {
-	return (*OptionNone[T])(nil)
+	return (*optionNone[T])(nil)
 }
 
-type OptionNone[T any] struct{}
+type optionNone[T any] struct{}
 
-func (o *OptionNone[T]) IsSome() bool {
+func (o *optionNone[T]) IsSome() bool {
 	return false
 }
 
-func (o *OptionNone[T]) IsNone() bool {
+func (o *optionNone[T]) IsNone() bool {
 	return true
 }
 
-func (o *OptionNone[T]) Expect(message string) T {
+func (o *optionNone[T]) Expect(message string) T {
 	panic(message)
 }
 
-func (o *OptionNone[T]) Unwrap() T {
-	panic("called [Option.Unwrap] on a [OptionNone] value")
+func (o *optionNone[T]) Unwrap() T {
+	panic("called Option.Unwrap on a OptionNone value")
 }
 
-func (o *OptionNone[T]) internal() {}
+func (o *optionNone[T]) result() {}

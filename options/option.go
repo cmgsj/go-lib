@@ -5,7 +5,7 @@ type Option[T any] interface {
 	IsNone() bool
 	Expect(message string) T
 	Unwrap() T
-	internal()
+	result()
 }
 
 func New[T any](value T, ok bool) Option[T] {
