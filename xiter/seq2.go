@@ -85,14 +85,22 @@ func (s Seq2[K, V]) FlatMap[K2, V2 any](f func(K, V) Seq2[K2, V2]) Seq2[K2, V2] 
 	}
 }
 
-func (s Seq2[K, V]) Sorted(compare func(K, V, K, V) int) Seq2[K, V] {
+func (s Seq2[K, V]) Reduce[R any](acc func(R, K, V) R) R {
+	var r R
+	for k, v := range s {
+		r = acc(r, k, v)
+	}
+	return r
+}
+
+func (s Seq2[K, V]) Sorted(cmp func(K, V, K, V) int) Seq2[K, V] {
 	return func(yield func(K, V) bool) {
 		var pairs []Pair[K, V]
 		for k, v := range s {
 			pairs = append(pairs, Pair[K, V]{Key: k, Value: v})
 		}
 		slices.SortFunc(pairs, func(x, y Pair[K, V]) int {
-			return compare(x.Key, x.Value, y.Key, y.Value)
+			return cmp(x.Key, x.Value, y.Key, y.Value)
 		})
 		for _, p := range pairs {
 			if !yield(p.Key, p.Value) {
@@ -162,12 +170,12 @@ func (s Seq2[K, V]) Last() (K, V, bool) {
 	return lastK, lastV, found
 }
 
-func (s Seq2[K, V]) Min(compare func(K, V, K, V) int) (K, V, bool) {
+func (s Seq2[K, V]) Min(cmp func(K, V, K, V) int) (K, V, bool) {
 	var minK K
 	var minV V
 	var found bool
 	for k, v := range s {
-		if !found || compare(minK, minV, k, v) < 0 {
+		if !found || cmp(minK, minV, k, v) < 0 {
 			minK = k
 			minV = v
 			found = true
@@ -176,12 +184,12 @@ func (s Seq2[K, V]) Min(compare func(K, V, K, V) int) (K, V, bool) {
 	return minK, minV, found
 }
 
-func (s Seq2[K, V]) Max(compare func(K, V, K, V) int) (K, V, bool) {
+func (s Seq2[K, V]) Max(cmp func(K, V, K, V) int) (K, V, bool) {
 	var maxK K
 	var maxV V
 	var found bool
 	for k, v := range s {
-		if !found || compare(maxK, maxV, k, v) > 0 {
+		if !found || cmp(maxK, maxV, k, v) > 0 {
 			maxK = k
 			maxV = v
 			found = true
@@ -229,6 +237,52 @@ func (s Seq2[K, V]) Range(f func(K, V) bool) {
 	for k, v := range s {
 		if !f(k, v) {
 			return
+		}
+	}
+}
+
+func (s Seq2[K, V]) ToSlice[T any](f func(K, V) T) []T {
+	var a []T
+	for k, v := range s {
+		a = append(a, f(k, v))
+	}
+	return a
+}
+
+func (s Seq2[K, V]) ToMap[K2 comparable, V2 any](key func(K, V) K2, value func(K, V) V2) map[K2]V2 {
+	m := make(map[K2]V2)
+	for k, v := range s {
+		m[key(k, v)] = value(k, v)
+	}
+	return m
+}
+
+func (s Seq2[K, V]) Keys() Seq[K] {
+	return func(yield func(K) bool) {
+		for k := range s {
+			if !yield(k) {
+				return
+			}
+		}
+	}
+}
+
+func (s Seq2[K, V]) Values() Seq[V] {
+	return func(yield func(V) bool) {
+		for _, v := range s {
+			if !yield(v) {
+				return
+			}
+		}
+	}
+}
+
+func (s Seq2[K, V]) Pairs() Seq[Pair[K, V]] {
+	return func(yield func(Pair[K, V]) bool) {
+		for k, v := range s {
+			if !yield(Pair[K, V]{Key: k, Value: v}) {
+				return
+			}
 		}
 	}
 }

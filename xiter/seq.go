@@ -105,14 +105,22 @@ func (s Seq[V]) FlatMap[V2 any](f func(V) Seq[V2]) Seq[V2] {
 	}
 }
 
-func (s Seq[V]) Sorted(compare func(V, V) int) Seq[V] {
+func (s Seq[V]) Reduce[R any](acc func(R, V) R) R {
+	var r R
+	for v := range s {
+		r = acc(r, v)
+	}
+	return r
+}
+
+func (s Seq[V]) Sorted(cmp func(V, V) int) Seq[V] {
 	return func(yield func(V) bool) {
 		var values []V
 		for v := range s {
 			values = append(values, v)
 		}
 		slices.SortFunc(values, func(x, y V) int {
-			return compare(x, y)
+			return cmp(x, y)
 		})
 		for _, v := range values {
 			if !yield(v) {
@@ -179,11 +187,11 @@ func (s Seq[V]) Last() (V, bool) {
 	return lastV, found
 }
 
-func (s Seq[V]) Min(compare func(V, V) int) (V, bool) {
+func (s Seq[V]) Min(cmp func(V, V) int) (V, bool) {
 	var minV V
 	var found bool
 	for v := range s {
-		if !found || compare(minV, v) < 0 {
+		if !found || cmp(minV, v) < 0 {
 			minV = v
 			found = true
 		}
@@ -191,11 +199,11 @@ func (s Seq[V]) Min(compare func(V, V) int) (V, bool) {
 	return minV, found
 }
 
-func (s Seq[V]) Max(compare func(V, V) int) (V, bool) {
+func (s Seq[V]) Max(cmp func(V, V) int) (V, bool) {
 	var maxV V
 	var found bool
 	for v := range s {
-		if !found || compare(maxV, v) > 0 {
+		if !found || cmp(maxV, v) > 0 {
 			maxV = v
 			found = true
 		}
@@ -242,6 +250,32 @@ func (s Seq[V]) Range(f func(V) bool) {
 	for v := range s {
 		if !f(v) {
 			return
+		}
+	}
+}
+
+func (s Seq[V]) ToSlice() []V {
+	var a []V
+	for v := range s {
+		a = append(a, v)
+	}
+	return a
+}
+
+func (s Seq[V]) ToMap[K2 comparable, V2 any](key func(V) K2, value func(V) V2) map[K2]V2 {
+	m := make(map[K2]V2)
+	for v := range s {
+		m[key(v)] = value(v)
+	}
+	return m
+}
+
+func (s Seq[V]) KeyValues[K2, V2 any](keyvalue func(V) (K2, V2)) Seq2[K2, V2] {
+	return func(yield func(K2, V2) bool) {
+		for v := range s {
+			if !yield(keyvalue(v)) {
+				return
+			}
 		}
 	}
 }
