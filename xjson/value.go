@@ -6,10 +6,10 @@ import (
 	"fmt"
 )
 
-var _ interface {
-	json.Marshaler
-	json.Unmarshaler
-} = (*Value)(nil)
+var (
+	_ json.Marshaler   = (*Value)(nil)
+	_ json.Unmarshaler = (*Value)(nil)
+)
 
 type Value struct {
 	kind  Kind
