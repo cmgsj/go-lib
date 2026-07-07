@@ -20,6 +20,10 @@ func (v *Value) GetKind() Kind {
 	return v.kind
 }
 
+func (v *Value) GetValue() any {
+	return v.value
+}
+
 func (v *Value) GetNull() *struct{} {
 	return v.value.(*struct{})
 }

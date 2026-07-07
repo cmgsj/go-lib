@@ -9,38 +9,38 @@ func Null() *Value {
 	}
 }
 
-func Bool(boolValue bool) *Value {
+func Bool(value bool) *Value {
 	return &Value{
 		kind:  KindBool,
-		value: boolValue,
+		value: value,
 	}
 }
 
-func Number(numberValue float64) *Value {
+func Number(value float64) *Value {
 	return &Value{
 		kind:  KindNumber,
-		value: numberValue,
+		value: value,
 	}
 }
 
-func String(stringValue string) *Value {
+func String(value string) *Value {
 	return &Value{
 		kind:  KindString,
-		value: stringValue,
+		value: value,
 	}
 }
 
-func Array(arrayValue []*Value) *Value {
+func Array(value []*Value) *Value {
 	return &Value{
 		kind:  KindArray,
-		value: arrayValue,
+		value: value,
 	}
 }
 
-func Object(objectValue map[string]*Value) *Value {
+func Object(value map[string]*Value) *Value {
 	return &Value{
 		kind:  KindObject,
-		value: objectValue,
+		value: value,
 	}
 }
 
