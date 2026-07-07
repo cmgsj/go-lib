@@ -20,12 +20,12 @@ func CompareValue[K, V any](cmp func(V, V) int) func(K, V, K, V) int {
 
 func CompareReverse[V any](cmp func(V, V) int) func(V, V) int {
 	return func(x, y V) int {
-		return -cmp(x, y)
+		return cmp(y, x)
 	}
 }
 
 func CompareReverse2[K, V any](cmp func(K, V, K, V) int) func(K, V, K, V) int {
 	return func(xk K, xv V, yk K, yv V) int {
-		return -cmp(xk, xv, yk, yv)
+		return cmp(yk, yv, xk, xv)
 	}
 }
