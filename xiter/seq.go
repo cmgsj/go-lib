@@ -191,7 +191,7 @@ func (s Seq[V]) Min(cmp func(V, V) int) (V, bool) {
 	var minV V
 	var found bool
 	for v := range s {
-		if !found || cmp(minV, v) < 0 {
+		if !found || cmp(v, minV) < 0 {
 			minV = v
 			found = true
 		}
@@ -203,7 +203,7 @@ func (s Seq[V]) Max(cmp func(V, V) int) (V, bool) {
 	var maxV V
 	var found bool
 	for v := range s {
-		if !found || cmp(maxV, v) > 0 {
+		if !found || cmp(v, maxV) > 0 {
 			maxV = v
 			found = true
 		}

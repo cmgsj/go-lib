@@ -175,7 +175,7 @@ func (s Seq2[K, V]) Min(cmp func(K, V, K, V) int) (K, V, bool) {
 	var minV V
 	var found bool
 	for k, v := range s {
-		if !found || cmp(minK, minV, k, v) < 0 {
+		if !found || cmp(k, v, minK, minV) < 0 {
 			minK = k
 			minV = v
 			found = true
@@ -189,7 +189,7 @@ func (s Seq2[K, V]) Max(cmp func(K, V, K, V) int) (K, V, bool) {
 	var maxV V
 	var found bool
 	for k, v := range s {
-		if !found || cmp(maxK, maxV, k, v) > 0 {
+		if !found || cmp(k, v, maxK, maxV) > 0 {
 			maxK = k
 			maxV = v
 			found = true
