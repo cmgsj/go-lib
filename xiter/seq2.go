@@ -52,7 +52,7 @@ func Pull2[K, V any](s Seq2[K, V]) (next func() (K, V, bool), stop func()) {
 
 type Seq2[K, V any] iter.Seq2[K, V]
 
-func (s Seq2[K, V]) Iter() (next func() (K, V, bool), stop func()) {
+func (s Seq2[K, V]) Pull() (next func() (K, V, bool), stop func()) {
 	return Pull2(s)
 }
 

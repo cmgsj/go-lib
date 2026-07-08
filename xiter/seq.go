@@ -72,7 +72,7 @@ func Pull[V any](s Seq[V]) (next func() (V, bool), stop func()) {
 
 type Seq[V any] iter.Seq[V]
 
-func (s Seq[V]) Iter() (next func() (V, bool), stop func()) {
+func (s Seq[V]) Pull() (next func() (V, bool), stop func()) {
 	return Pull(s)
 }
 
