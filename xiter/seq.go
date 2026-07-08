@@ -5,12 +5,6 @@ import (
 	"slices"
 )
 
-type Seq[V any] iter.Seq[V]
-
-func Pull[V any](s Seq[V]) (next func() (V, bool), stop func()) {
-	return iter.Pull(iter.Seq[V](s))
-}
-
 func Func[V any](f func() (V, bool)) Seq[V] {
 	return func(yield func(V) bool) {
 		for {
@@ -70,6 +64,16 @@ func PairValues[K, V any](pairs ...Pair[K, V]) Seq[V] {
 			}
 		}
 	}
+}
+
+func Pull[V any](s Seq[V]) (next func() (V, bool), stop func()) {
+	return iter.Pull(iter.Seq[V](s))
+}
+
+type Seq[V any] iter.Seq[V]
+
+func (s Seq[V]) Iter() (next func() (V, bool), stop func()) {
+	return Pull(s)
 }
 
 func (s Seq[V]) Filter(f func(V) bool) Seq[V] {

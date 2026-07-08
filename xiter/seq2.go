@@ -5,12 +5,6 @@ import (
 	"slices"
 )
 
-type Seq2[K, V any] iter.Seq2[K, V]
-
-func Pull2[K, V any](s Seq2[K, V]) (next func() (K, V, bool), stop func()) {
-	return iter.Pull2(iter.Seq2[K, V](s))
-}
-
 func Func2[K, V any](f func() (K, V, bool)) Seq2[K, V] {
 	return func(yield func(K, V) bool) {
 		for {
@@ -50,6 +44,16 @@ func Pairs2[K, V any](pairs ...Pair[K, V]) Seq2[K, V] {
 			}
 		}
 	}
+}
+
+func Pull2[K, V any](s Seq2[K, V]) (next func() (K, V, bool), stop func()) {
+	return iter.Pull2(iter.Seq2[K, V](s))
+}
+
+type Seq2[K, V any] iter.Seq2[K, V]
+
+func (s Seq2[K, V]) Iter() (next func() (K, V, bool), stop func()) {
+	return Pull2(s)
 }
 
 func (s Seq2[K, V]) Filter(f func(K, V) bool) Seq2[K, V] {
